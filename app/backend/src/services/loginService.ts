@@ -1,4 +1,4 @@
-import { compare } from 'bcryptjs';
+// import { compare } from 'bcryptjs';
 import 'dotenv/config';
 import { sign } from 'jsonwebtoken';
 import Users from '../database/models/users';
@@ -13,10 +13,10 @@ export interface ILoginResponse {
 }
 
 export default class LoginService {
-  static async login({ email, password }: any): Promise<ILoginResponse> {
+  static async login({ email }: any): Promise<ILoginResponse> {
     const user = await Users.findOne({ where: { email } });
-    const isCorrectPassword = await compare(password, user?.password as string);
-    if (!user || !isCorrectPassword) return { code: 404, data: { message: 'User not found' } };
+    // const isCorrectPassword = await compare(password, user?.password as string);
+    if (!user) return { code: 404, data: { message: 'User not found' } };
     const token = sign({ email, id: user.id }, process.env.JWT_SECRET as string);
     return { code: 200, data: { token } };
   }
