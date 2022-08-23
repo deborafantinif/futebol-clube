@@ -1,11 +1,7 @@
-import { compare } from 'bcryptjs';
+import { compareSync } from 'bcryptjs';
 import 'dotenv/config';
 import { JwtPayload, sign, verify } from 'jsonwebtoken';
 import Users from '../database/models/users';
-
-export interface ILoginService {
-  login({ email, password }: any): Promise<ILoginResponse>
-}
 
 export interface ILoginResponse {
   code: number
@@ -16,8 +12,10 @@ export default class LoginService {
   static async login({ email, password }: any): Promise<ILoginResponse> {
     if (!email || !password) return { code: 400, data: { message: 'All fields must be filled' } };
     const user = await Users.findOne({ where: { email } });
-    const isCorrectPassword = await compare(password, user?.password as string);
-    if (!user || isCorrectPassword) {
+    if (!user) return { code: 401, data: { message: 'Incorrect email or password' } };
+
+    const isCorrectPassword = compareSync(password, user?.password as string);
+    if (!isCorrectPassword) {
       return {
         code: 401, data: { message: 'Incorrect email or password' },
       };
