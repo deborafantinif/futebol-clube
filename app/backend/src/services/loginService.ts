@@ -13,7 +13,8 @@ export interface ILoginResponse {
 }
 
 export default class LoginService {
-  static async login({ email }: any): Promise<ILoginResponse> {
+  static async login({ email, password }: any): Promise<ILoginResponse> {
+    if (!email || !password) return { code: 400, data: { message: 'All fields must be filled' } };
     const user = await Users.findOne({ where: { email } });
     // const isCorrectPassword = await compare(password, user?.password as string);
     if (!user) return { code: 404, data: { message: 'User not found' } };
