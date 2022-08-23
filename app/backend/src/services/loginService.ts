@@ -1,6 +1,6 @@
 import { compare } from 'bcryptjs';
 import 'dotenv/config';
-import { sign } from 'jsonwebtoken';
+import { JwtPayload, sign, verify } from 'jsonwebtoken';
 import Users from '../database/models/users';
 
 export interface ILoginService {
@@ -24,5 +24,11 @@ export default class LoginService {
     }
     const token = sign({ email, id: user.id }, process.env.JWT_SECRET as string);
     return { code: 200, data: { token } };
+  }
+
+  static async validate(token: string): Promise<string> {
+    const tokenUser = verify(token, process.env.JWT_SECRET as string) as JwtPayload;
+    const user = await Users.findByPk(tokenUser.id) as Users;
+    return user.role;
   }
 }
