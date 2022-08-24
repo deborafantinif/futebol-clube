@@ -21,13 +21,12 @@ export default class LoginService {
         code: 401, data: { message: 'Incorrect email or password' },
       };
     }
-    // const token = sign({ email, id: user.id }, process.env.JWT_SECRET as string);
+
     const token = JwtService.sign({ email, id: user.id });
     return { code: 200, data: { token } };
   }
 
   static async validate(token: string): Promise<string> {
-    // const tokenUser = verify(token, process.env.JWT_SECRET as string) as JwtPayload;
     const tokenUser = JwtService.verify(token);
     const user = await Users.findByPk(tokenUser.id) as Users;
     return user.role;
