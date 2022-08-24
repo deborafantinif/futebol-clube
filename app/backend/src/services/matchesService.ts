@@ -1,5 +1,6 @@
 import Matches from '../database/models/matches';
 import Teams from '../database/models/teams';
+import JwtService from './jwtService';
 
 export interface IMatchUpdate {
   homeTeamGoals: number
@@ -38,8 +39,8 @@ export default class MatchesServices {
   // }
 
   static async create(match: IMatchCreate, token: string): Promise<IDefaultResponse> {
-    // await JwtService.verify(token);
-    if (!token) return { code: 401, data: { message: 'Token must be a valid token' } };
+    const isValidToken = await JwtService.verify(token);
+    if (!isValidToken.id) return { code: 401, data: { message: 'Token must be a valid token' } };
     if (match.awayTeam === match.homeTeam) {
       return {
         code: 401,
@@ -50,7 +51,7 @@ export default class MatchesServices {
     const awayTeam = await Matches.findByPk(match.awayTeam);
     if (!homeTeam || !awayTeam) {
       return {
-        code: 401,
+        code: 404,
         data: { message: 'There is no team with such id!' },
       };
     }

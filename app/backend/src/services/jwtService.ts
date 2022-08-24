@@ -7,6 +7,11 @@ export default class JwtService {
   }
 
   static verify(token: string): JwtPayload {
-    return verify(token, process.env.JWT_SECRET as string) as JwtPayload;
+    try {
+      return verify(token, process.env.JWT_SECRET as string) as JwtPayload;
+    } catch (e) {
+      console.error(e);
+      return new Error('Not Authorization');
+    }
   }
 }
