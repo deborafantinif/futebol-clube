@@ -1,11 +1,14 @@
 import Matches from '../database/models/matches';
 import Teams from '../database/models/teams';
 
-export interface IMatchCreate {
-  homeTeam: number
-  awayTeam: number
+export interface IMatchUpdate {
   homeTeamGoals: number
   awayTeamGoals: number
+}
+
+export interface IMatchCreate extends IMatchUpdate {
+  homeTeam: number
+  awayTeam: number
 }
 
 export interface IDefaultResponse {
@@ -36,7 +39,21 @@ export default class MatchesServices {
 
   static async create(match: IMatchCreate, token: string): Promise<IDefaultResponse> {
     // await JwtService.verify(token);
-    if (!token) return { code: 401, data: { message: 'Not Authorization' } };
+    if (!token) return { code: 401, data: { message: 'Token must be a valid token' } };
+    if (match.awayTeam === match.homeTeam) {
+      return {
+        code: 401,
+        data: { message: 'It is not possible to create a match with two equal teams' },
+      };
+    }
+    const homeTeam = await Matches.findByPk(match.homeTeam);
+    const awayTeam = await Matches.findByPk(match.awayTeam);
+    if (!homeTeam || !awayTeam) {
+      return {
+        code: 401,
+        data: { message: 'There is no team with such id!' },
+      };
+    }
     const newMatch = await Matches.create({ ...match, inProgress: 1 });
     return { code: 201, data: newMatch };
   }
@@ -44,6 +61,13 @@ export default class MatchesServices {
   static async finishProgress(id: number): Promise<void> {
     await Matches.update(
       { inProgress: 0 },
+      { where: { id } },
+    );
+  }
+
+  static async update(id: number, match: IMatchUpdate): Promise<void> {
+    await Matches.update(
+      { ...match },
       { where: { id } },
     );
   }
