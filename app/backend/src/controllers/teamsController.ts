@@ -8,4 +8,9 @@ export default class TeamsController {
     const response = await this.teamService.getAll();
     res.json(response);
   }
+
+  async getById(req: Request, res: Response): Promise<void> {
+    const response = await this.teamService.getById(Number(req.params.id));
+    res.json(response);
+  }
 }
