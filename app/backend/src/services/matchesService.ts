@@ -32,4 +32,11 @@ export default class MatchesServices {
   static async create(match: IMatchCreate): Promise<Matches> {
     return Matches.create({ ...match, inProgress: 1 });
   }
+
+  static async finishProgress(id: number): Promise<void> {
+    await Matches.update(
+      { inProgress: 0 },
+      { where: { id } },
+    );
+  }
 }
