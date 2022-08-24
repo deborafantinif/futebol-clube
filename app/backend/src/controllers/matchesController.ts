@@ -15,8 +15,11 @@ export default class MatchesController {
   }
 
   async create(req: Request, res: Response) {
-    const response = await this.matchesServices.create(req.body as IMatchCreate);
-    res.json(response);
+    const { code, data } = await this.matchesServices.create(
+      req.body as IMatchCreate,
+      req.headers.authorization as string,
+    );
+    res.status(code).json(data);
   }
 
   async finishProgress(req: Request, res: Response) {

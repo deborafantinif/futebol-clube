@@ -8,6 +8,11 @@ export interface IMatchCreate {
   awayTeamGoals: number
 }
 
+export interface IDefaultResponse {
+  code: number
+  data: any
+}
+
 export default class MatchesServices {
   static async getAll(): Promise<Matches[]> {
     return Matches.findAll({
@@ -29,8 +34,11 @@ export default class MatchesServices {
   //   });
   // }
 
-  static async create(match: IMatchCreate): Promise<Matches> {
-    return Matches.create({ ...match, inProgress: 1 });
+  static async create(match: IMatchCreate, token: string): Promise<IDefaultResponse> {
+    // await JwtService.verify(token);
+    if (!token) return { code: 401, data: { message: 'Not Authorization' } };
+    const newMatch = await Matches.create({ ...match, inProgress: 1 });
+    return { code: 201, data: newMatch };
   }
 
   static async finishProgress(id: number): Promise<void> {
