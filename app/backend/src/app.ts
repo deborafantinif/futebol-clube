@@ -1,5 +1,6 @@
 import * as express from 'express';
 import error from './middleware/error';
+import routerLeaderboard from './routes/leaderboardRouter';
 import routerLogin from './routes/loginRouter';
 import routerMatches from './routes/matchesRouter';
 import routerTeams from './routes/teamsRouter';
@@ -16,6 +17,7 @@ class App {
     this.app.use('/login', routerLogin);
     this.app.use('/teams', routerTeams);
     this.app.use('/matches', routerMatches);
+    this.app.use('/leaderboard', routerLeaderboard);
     // Não remover essa rota
     this.app.get('/', (req, res) => res.json({ ok: true }));
 
