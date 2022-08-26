@@ -36,12 +36,28 @@ const verifyVitory = (matches: Matches[]): IPointsMatch[] => matches.map((match)
   };
 });
 
+const verifyVitoryAway = (matches: Matches[]): IPointsMatch[] => matches.map((match) => {
+  let result;
+  if (match.homeTeamGoals < match.awayTeamGoals) {
+    result = 'vitory';
+  } else if (match.homeTeamGoals <= match.awayTeamGoals) {
+    result = 'draw';
+  } else {
+    result = 'loser';
+  }
+  return {
+    homeTeamGoals: match.homeTeamGoals,
+    awayTeamGoals: match.awayTeamGoals,
+    result,
+  };
+});
+
 const totalGoals = (matches: IPointsMatch[]) => {
   let goalsFavor = 0;
   let goalsOwn = 0;
   matches.forEach((match) => {
-    goalsFavor += match.homeTeamGoals;
-    goalsOwn += match.awayTeamGoals;
+    goalsFavor += match.awayTeamGoals;
+    goalsOwn += match.homeTeamGoals;
   });
   return { goalsFavor, goalsOwn };
 };
@@ -76,64 +92,6 @@ const sumMatches = (matches: IPointsMatch[]) => {
   };
 };
 
-// const orderTeamsByGoalsOwn = (resultTeam: IResultTeam[]) =>
-//   resultTeam.sort((team, otherTem) => {
-//     if (otherTem.goalsOwn < team.goalsOwn) {
-//       return 1;
-//     } if (otherTem.goalsOwn > team.goalsOwn) {
-//       return -1;
-//     }
-//     return 0;
-//   });
-
-// const orderTeamsByGoalsFavor = (resultTeam: IResultTeam[]) =>
-//   resultTeam.sort((team, otherTem) => {
-//     if (otherTem.goalsFavor > team.goalsFavor) {
-//       return 1;
-//     } if (otherTem.goalsFavor < team.goalsFavor) {
-//       return -1;
-//     } if (otherTem.goalsFavor === team.goalsFavor) {
-//       orderTeamsByGoalsOwn(resultTeam);
-//     }
-//     return 0;
-//   });
-
-// const orderTeamsByGoalsBalance = (resultTeam: IResultTeam[]) =>
-//   resultTeam.sort((team, otherTem) => {
-//     if (otherTem.goalsBalance < team.goalsBalance) {
-//       return 1;
-//     } if (otherTem.goalsBalance > team.goalsBalance) {
-//       return -1;
-//     } if (otherTem.goalsBalance === team.goalsBalance) {
-//       orderTeamsByGoalsFavor(resultTeam);
-//     }
-//     return 0;
-//   });
-
-// const orderTeamsByVictories = (resultTeam: IResultTeam[]) =>
-//   resultTeam.sort((team, otherTem) => {
-//     if (otherTem.totalVictories > team.totalVictories) {
-//       return 1;
-//     } if (otherTem.totalVictories < team.totalVictories) {
-//       return -1;
-//     } if (otherTem.totalVictories === team.totalVictories) {
-//       orderTeamsByGoalsBalance(resultTeam);
-//     }
-//     return 0;
-//   });
-
-// const orderTeamsByPoints = (resultTeam: IResultTeam[]) =>
-//   resultTeam.sort((team, otherTem) => {
-//     if (otherTem.totalPoints > team.totalPoints) {
-//       return 1;
-//     } if (otherTem.totalPoints < team.totalPoints) {
-//       return -1;
-//     } if (otherTem.totalPoints === team.totalPoints) {
-//       orderTeamsByVictories(resultTeam);
-//     }
-//     return 0;
-//   });
-
 const orderTeams = (resultTeam: IResultTeam[]) => resultTeam.sort((team, otherTeam) => {
   if (otherTeam.totalPoints > team.totalPoints) return 1;
   if (otherTeam.totalPoints < team.totalPoints) return -1;
@@ -155,6 +113,25 @@ export default class LeaderboardService {
       teams.map(async (team) => {
         const matches = await Matches.findAll({ where: { homeTeam: team.id, inProgress: 0 } });
         const resultMatches = verifyVitory(matches);
+        const sumResult = sumMatches(resultMatches);
+        const sumGoalsTeam = totalGoals(resultMatches);
+        return {
+          name: team.teamName,
+          ...sumResult,
+          ...sumGoalsTeam,
+          goalsBalance: sumGoalsTeam.goalsFavor - sumGoalsTeam.goalsOwn,
+        };
+      }),
+    );
+    return orderTeams(resultAllFinishTeam);
+  }
+
+  static async getAllByAway() {
+    const teams = await Teams.findAll();
+    const resultAllFinishTeam = await Promise.all(
+      teams.map(async (team) => {
+        const matches = await Matches.findAll({ where: { awayTeam: team.id, inProgress: 0 } });
+        const resultMatches = verifyVitoryAway(matches);
         const sumResult = sumMatches(resultMatches);
         const sumGoalsTeam = totalGoals(resultMatches);
         return {
