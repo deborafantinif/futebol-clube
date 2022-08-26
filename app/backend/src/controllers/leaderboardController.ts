@@ -13,4 +13,9 @@ export default class LeaderboardController {
     const response = await this.leaderboardService.getAllByAway();
     res.json(response);
   }
+
+  async getAllByGeral(_req: Request, res: Response) {
+    const response = await this.leaderboardService.getAllByGeral();
+    res.json(response);
+  }
 }

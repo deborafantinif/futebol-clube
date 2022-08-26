@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import Matches from '../database/models/matches';
 import Teams from '../database/models/teams';
 
@@ -20,10 +21,10 @@ interface IResultTeam {
   efficiency: string
 }
 
-const verifyVitory = (matches: Matches[]): IPointsMatch[] => matches.map((match) => {
+const verifyVictory = (matches: Matches[]): IPointsMatch[] => matches.map((match) => {
   let result;
   if (match.homeTeamGoals > match.awayTeamGoals) {
-    result = 'vitory';
+    result = 'victory';
   } else if (match.homeTeamGoals >= match.awayTeamGoals) {
     result = 'draw';
   } else {
@@ -36,10 +37,10 @@ const verifyVitory = (matches: Matches[]): IPointsMatch[] => matches.map((match)
   };
 });
 
-const verifyVitoryAway = (matches: Matches[]): IPointsMatch[] => matches.map((match) => {
+const verifyVictoryAway = (matches: Matches[]): IPointsMatch[] => matches.map((match) => {
   let result;
   if (match.homeTeamGoals < match.awayTeamGoals) {
-    result = 'vitory';
+    result = 'victory';
   } else if (match.homeTeamGoals <= match.awayTeamGoals) {
     result = 'draw';
   } else {
@@ -52,7 +53,28 @@ const verifyVitoryAway = (matches: Matches[]): IPointsMatch[] => matches.map((ma
   };
 });
 
+const verifyVictoryGeral = (matches: Matches[], id: number): IPointsMatch[] => {
+  const homeMatches = matches.filter((match) => match.homeTeam === id);
+  const awayMatches = matches.filter((match) => match.awayTeam === id);
+  const resultsHomeMatches = verifyVictory(homeMatches);
+  const resultsAwayMatches = verifyVictoryAway(awayMatches);
+  return [
+    ...resultsAwayMatches,
+    ...resultsHomeMatches,
+  ];
+};
+
 const totalGoals = (matches: IPointsMatch[]) => {
+  let goalsFavor = 0;
+  let goalsOwn = 0;
+  matches.forEach((match) => {
+    goalsFavor += match.homeTeamGoals;
+    goalsOwn += match.awayTeamGoals;
+  });
+  return { goalsFavor, goalsOwn };
+};
+
+const totalGoalsAway = (matches: IPointsMatch[]) => {
   let goalsFavor = 0;
   let goalsOwn = 0;
   matches.forEach((match) => {
@@ -62,11 +84,32 @@ const totalGoals = (matches: IPointsMatch[]) => {
   return { goalsFavor, goalsOwn };
 };
 
+const totalGoalsGeral = (matches: IPointsMatch[]) => {
+  let goalsFavor = 0;
+  let goalsOwn = 0;
+  matches.forEach((match) => {
+    const goals = [match.awayTeamGoals, match.homeTeamGoals];
+    const maxGoal = Math.max(...goals);
+    const minGoal = Math.min(...goals);
+    if (match.result === 'draw') {
+      goalsFavor += match.awayTeamGoals;
+      goalsOwn += match.homeTeamGoals;
+    } if (match.result === 'victory') {
+      goalsFavor += maxGoal;
+      goalsOwn += minGoal;
+    } else {
+      goalsFavor += minGoal;
+      goalsOwn += maxGoal;
+    }
+  });
+  return { goalsFavor, goalsOwn };
+};
+
 const totalResultMatch = (matches: IPointsMatch[]) => {
   let [totalVictories, totalDraws, totalLosses] = [0, 0, 0, 0];
   matches.forEach((match) => {
     switch (match.result) {
-      case 'vitory':
+      case 'victory':
         totalVictories += 1;
         break;
       case 'draw':
@@ -112,7 +155,7 @@ export default class LeaderboardService {
     const resultAllFinishTeam = await Promise.all(
       teams.map(async (team) => {
         const matches = await Matches.findAll({ where: { homeTeam: team.id, inProgress: 0 } });
-        const resultMatches = verifyVitory(matches);
+        const resultMatches = verifyVictory(matches);
         const sumResult = sumMatches(resultMatches);
         const sumGoalsTeam = totalGoals(resultMatches);
         return {
@@ -131,9 +174,30 @@ export default class LeaderboardService {
     const resultAllFinishTeam = await Promise.all(
       teams.map(async (team) => {
         const matches = await Matches.findAll({ where: { awayTeam: team.id, inProgress: 0 } });
-        const resultMatches = verifyVitoryAway(matches);
+        const resultMatches = verifyVictoryAway(matches);
         const sumResult = sumMatches(resultMatches);
-        const sumGoalsTeam = totalGoals(resultMatches);
+        const sumGoalsTeam = totalGoalsAway(resultMatches);
+        return {
+          name: team.teamName,
+          ...sumResult,
+          ...sumGoalsTeam,
+          goalsBalance: sumGoalsTeam.goalsFavor - sumGoalsTeam.goalsOwn,
+        };
+      }),
+    );
+    return orderTeams(resultAllFinishTeam);
+  }
+
+  static async getAllByGeral() {
+    const teams = await Teams.findAll();
+    const resultAllFinishTeam = await Promise.all(
+      teams.map(async (team) => {
+        const matches = await Matches.findAll(
+          { where: { [Op.or]: [{ awayTeam: team.id }, { homeTeam: team.id }], inProgress: 0 } },
+        );
+        const resultMatches = verifyVictoryGeral(matches, team.id);
+        const sumResult = sumMatches(resultMatches);
+        const sumGoalsTeam = totalGoalsGeral(resultMatches);
         return {
           name: team.teamName,
           ...sumResult,
