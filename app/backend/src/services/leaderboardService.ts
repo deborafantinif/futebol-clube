@@ -92,12 +92,12 @@ const totalGoalsGeral = (matches: IPointsMatch[]) => {
     const maxGoal = Math.max(...goals);
     const minGoal = Math.min(...goals);
     if (match.result === 'draw') {
-      goalsFavor += match.awayTeamGoals;
+      goalsFavor += match.homeTeamGoals;
       goalsOwn += match.homeTeamGoals;
     } if (match.result === 'victory') {
       goalsFavor += maxGoal;
       goalsOwn += minGoal;
-    } else {
+    } if (match.result === 'loser') {
       goalsFavor += minGoal;
       goalsOwn += maxGoal;
     }
