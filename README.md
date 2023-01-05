@@ -6,3 +6,4 @@ Site informativo sobre partidas e classificações de futebol!
 - Docker
 - Sequelize
 - Desenvolvimento de API
+- Typescript
